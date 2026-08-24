@@ -1,0 +1,86 @@
+package repository
+
+import (
+	"database/sql"
+	"errors"
+
+	"github.com/username/belajar_go/backend/internal/model"
+)
+
+type BarangRepository struct {
+	db *sql.DB
+}
+
+func NewBarangRepository(db *sql.DB) *BarangRepository {
+	return &BarangRepository{db: db}
+}
+
+const baseQuery = `
+    SELECT b.id, b.nama, b.harga, b.stok, b.kategori_id, k.nama_kategori, b.satuan_id, s.nama_satuan
+    FROM barang b
+    LEFT JOIN kategori k ON b.kategori_id = k.id
+    LEFT JOIN satuan s ON b.satuan_id = s.id
+`
+
+func (r *BarangRepository) GetAll() []model.Barang {
+	rows, err := r.db.Query(baseQuery + " ORDER BY b.id DESC")
+	if err != nil {
+		return []model.Barang{}
+	}
+	defer rows.Close()
+
+	var list []model.Barang
+	for rows.Next() {
+		var b model.Barang
+		rows.Scan(&b.ID, &b.Nama, &b.Harga, &b.Stok, &b.KategoriID, &b.NamaKategori, &b.SatuanID, &b.NamaSatuan)
+		list = append(list, b)
+	}
+	return list
+}
+
+func (r *BarangRepository) GetByID(id int) (model.Barang, error) {
+	var b model.Barang
+	row := r.db.QueryRow(baseQuery+" WHERE b.id = ?", id)
+	err := row.Scan(&b.ID, &b.Nama, &b.Harga, &b.Stok, &b.KategoriID, &b.NamaKategori, &b.SatuanID, &b.NamaSatuan)
+	if err != nil {
+		return model.Barang{}, errors.New("barang tidak ditemukan")
+	}
+	return b, nil
+}
+
+func (r *BarangRepository) Create(b model.Barang) model.Barang {
+	result, err := r.db.Exec(
+		"INSERT INTO barang (nama, harga, stok, kategori_id, satuan_id) VALUES (?, ?, ?, ?, ?)",
+		b.Nama, b.Harga, b.Stok, b.KategoriID, b.SatuanID,
+	)
+	if err != nil {
+		return model.Barang{}
+	}
+	id, _ := result.LastInsertId()
+	b.ID = int(id)
+	return b
+}
+
+func (r *BarangRepository) Update(id int, updated model.Barang) (model.Barang, error) {
+	_, err := r.db.Exec(
+		"UPDATE barang SET nama = ?, harga = ?, stok = ?, kategori_id = ?, satuan_id = ? WHERE id = ?",
+		updated.Nama, updated.Harga, updated.Stok, updated.KategoriID, updated.SatuanID, id,
+	)
+	if err != nil {
+		return model.Barang{}, err
+	}
+	updated.ID = id
+	return updated, nil
+}
+
+func (r *BarangRepository) Delete(id int) error {
+	result, err := r.db.Exec("DELETE FROM barang WHERE id = ?", id)
+	if err != nil {
+		return err
+	}
+	affected, _ := result.RowsAffected()
+	if affected == 0 {
+		return errors.New("barang tidak ditemukan")
+	}
+	return nil
+}
