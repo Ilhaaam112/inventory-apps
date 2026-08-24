@@ -5,6 +5,7 @@ type Barang struct {
 	Nama         string  `json:"nama"`
 	Harga        float64 `json:"harga"`
 	Stok         int     `json:"stok"`
+	StokMinimum  int     `json:"stok_minimum"`
 	KategoriID   *int    `json:"kategori_id"`
 	NamaKategori *string `json:"nama_kategori,omitempty"`
 	SatuanID     *int    `json:"satuan_id"`

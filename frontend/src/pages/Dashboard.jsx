@@ -1,99 +1,130 @@
-import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import axios from 'axios'
+import { Package, Warehouse, Boxes, AlertTriangle, ArrowRight } from 'lucide-react'
 import Layout from '../components/Layout'
+import { rupiah } from '../components/FilterBar'
 
-function statusBarang(stok) {
-  if (stok === 0) return { label: 'Habis', className: 'bg-red-500/10 text-red-400 border-red-500/30' }
-  if (stok <= 10) return { label: 'Menipis', className: 'bg-accent/10 text-accent border-accent/30' }
-  return { label: 'Aman', className: 'bg-success/10 text-success border-success/30' }
+function Kartu({ icon: Icon, label, nilai, sub, warna = 'text-ink' }) {
+  return (
+    <div className="bg-surface border border-border rounded-2xl p-5">
+      <div className="flex items-center gap-2 mb-2 text-muted">
+        <Icon size={15} />
+        <p className="text-xs font-mono tracking-widest uppercase">{label}</p>
+      </div>
+      <p className={`font-display text-2xl ${warna}`}>{nilai}</p>
+      {sub && <p className="text-xs text-muted mt-1">{sub}</p>}
+    </div>
+  )
 }
 
 function Dashboard({ user, onLogout }) {
-  const navigate = useNavigate()
-  const [barangList, setBarangList] = useState([])
+  const [data, setData] = useState(null)
+  const [gagal, setGagal] = useState(false)
 
   useEffect(() => {
-    axios.get('/api/barang').then((res) => setBarangList(res.data || []))
+    axios
+      .get('/api/dashboard/overview')
+      .then((r) => setData(r.data))
+      .catch(() => setGagal(true))
   }, [])
 
-  const totalBarang = barangList.length
-  const totalStok = barangList.reduce((sum, b) => sum + b.stok, 0)
-  const stokMenipis = barangList.filter((b) => b.stok > 0 && b.stok <= 10).length
-  const nilaiInventori = barangList.reduce((sum, b) => sum + b.harga * b.stok, 0)
+  if (gagal) {
+    return (
+      <Layout title="Overview" user={user} onLogout={onLogout}>
+        <div className="bg-surface border border-border rounded-2xl p-10 text-center text-muted text-sm">
+          Gagal memuat ringkasan. Pastikan server Go berjalan dan migrasi dashboard sudah dijalankan.
+        </div>
+      </Layout>
+    )
+  }
 
-  const stats = [
-    { label: 'Total Barang', value: totalBarang, sub: 'Jenis barang' },
-    { label: 'Total Stok', value: totalStok, sub: 'Unit tersedia' },
-    { label: 'Stok Menipis', value: stokMenipis, sub: '≤ 10 unit' },
-    { label: 'Nilai Inventori', value: `Rp ${nilaiInventori.toLocaleString('id-ID')}`, sub: 'Estimasi total' },
-  ]
+  if (!data) {
+    return (
+      <Layout title="Overview" user={user} onLogout={onLogout}>
+        <div className="bg-surface border border-border rounded-2xl p-10 text-center text-muted text-sm">Memuat…</div>
+      </Layout>
+    )
+  }
+
+  const puncak = Math.max(1, ...data.tren.map((t) => Math.max(t.masuk, t.keluar)))
+  const perluPerhatian = data.stok_menipis + data.stok_habis
 
   return (
-    <Layout title="Dashboard" user={user} onLogout={onLogout}>
-      <div className="rounded-2xl bg-gradient-to-br from-accent to-accent-soft p-8 mb-6 flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <p className="font-mono text-xs text-white/80 tracking-widest mb-2">RINGKASAN</p>
-          <h2 className="font-display text-2xl font-semibold text-white">
-            Halo, {user?.nama_lengkap} 👋
-          </h2>
-        </div>
-        <button
-          onClick={() => navigate('/barang')}
-          className="bg-white text-accent font-medium rounded-full px-5 py-2.5 text-sm hover:bg-white/90 transition-colors"
-        >
-          + Tambah Barang
-        </button>
+    <Layout title="Overview" user={user} onLogout={onLogout}>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <Kartu icon={Package} label="Jenis Barang" nilai={data.total_barang}
+          sub={`${data.total_gudang} gudang · ${data.total_supplier} supplier`} />
+        <Kartu icon={Boxes} label="Total Unit" nilai={data.total_unit.toLocaleString('id-ID')}
+          sub="tersebar di seluruh gudang" />
+        <Kartu icon={Warehouse} label="Nilai Stok" nilai={rupiah(data.nilai_persediaan)}
+          sub="unit × harga barang" warna="text-accent" />
+        <Kartu icon={AlertTriangle} label="Perlu Perhatian" nilai={perluPerhatian}
+          sub={`${data.stok_habis} habis · ${data.stok_menipis} menipis`}
+          warna={perluPerhatian > 0 ? 'text-accent' : 'text-success'} />
       </div>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {stats.map((s) => (
-          <div key={s.label} className="bg-surface border border-border rounded-2xl p-5">
-            <p className="text-xs text-muted mb-3">{s.label}</p>
-            <p className="font-display text-2xl font-semibold mb-1">{s.value}</p>
-            <p className="text-xs text-muted">{s.sub}</p>
+      <div className="grid lg:grid-cols-3 gap-4 mb-6">
+        <div className="bg-surface border border-border rounded-2xl p-5">
+          <p className="text-xs font-mono text-muted tracking-widest uppercase mb-3">Hari Ini</p>
+          <div className="flex gap-8">
+            <div>
+              <p className="font-display text-2xl text-success">+{data.masuk_hari_ini}</p>
+              <p className="text-xs text-muted">unit masuk</p>
+            </div>
+            <div>
+              <p className="font-display text-2xl text-accent">−{data.keluar_hari_ini}</p>
+              <p className="text-xs text-muted">unit keluar</p>
+            </div>
           </div>
-        ))}
+          <p className="text-xs text-muted mt-4 pt-4 border-t border-border">
+            {data.transaksi_bulan_ini} transaksi bulan ini
+          </p>
+        </div>
+
+        <div className="bg-surface border border-border rounded-2xl p-5 lg:col-span-2">
+          <p className="text-xs font-mono text-muted tracking-widest uppercase mb-4">7 Hari Terakhir</p>
+          <div className="flex items-end justify-between gap-2 h-32">
+            {data.tren.map((t) => (
+              <div key={t.tanggal} className="flex-1 flex flex-col items-center gap-1">
+                <div className="w-full flex items-end justify-center gap-1 h-24">
+                  <div
+                    className="w-1/2 bg-success/70 rounded-t"
+                    style={{ height: `${(t.masuk / puncak) * 100}%` }}
+                    title={`Masuk ${t.masuk}`}
+                  />
+                  <div
+                    className="w-1/2 bg-accent/70 rounded-t"
+                    style={{ height: `${(t.keluar / puncak) * 100}%` }}
+                    title={`Keluar ${t.keluar}`}
+                  />
+                </div>
+                <span className="text-[10px] font-mono text-muted">{t.tanggal.slice(8)}</span>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-4 mt-3 text-xs text-muted">
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-success/70" /> Masuk</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-accent/70" /> Keluar</span>
+          </div>
+        </div>
       </div>
 
-      <div className="bg-surface border border-border rounded-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h3 className="font-display font-semibold">Barang Terbaru</h3>
-          <button onClick={() => navigate('/barang')} className="text-xs text-accent hover:text-accent-soft">
-            Lihat semua →
-          </button>
-        </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs font-mono text-muted border-b border-border">
-              <th className="px-6 py-3">Nama Barang</th>
-              <th className="px-6 py-3">Harga</th>
-              <th className="px-6 py-3">Stok</th>
-              <th className="px-6 py-3">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {barangList.length === 0 ? (
-              <tr><td colSpan="4" className="text-center py-8 text-muted">Belum ada data</td></tr>
-            ) : (
-              barangList.slice(-5).reverse().map((b) => {
-                const status = statusBarang(b.stok)
-                return (
-                  <tr key={b.id} className="border-b border-border last:border-0 hover:bg-surface-soft transition-colors">
-                    <td className="px-6 py-3 font-medium">{b.nama}</td>
-                    <td className="px-6 py-3 font-mono text-muted">Rp {b.harga.toLocaleString('id-ID')}</td>
-                    <td className="px-6 py-3 font-mono">{b.stok}</td>
-                    <td className="px-6 py-3">
-                      <span className={`text-xs border rounded-full px-2.5 py-1 ${status.className}`}>
-                        {status.label}
-                      </span>
-                    </td>
-                  </tr>
-                )
-              })
-            )}
-          </tbody>
-        </table>
+      <div className="grid sm:grid-cols-2 gap-4">
+        <Link to="/dashboard/stok-menipis" className="bg-surface border border-border rounded-2xl p-5 hover:border-accent/40 transition-colors flex items-center justify-between">
+          <div>
+            <p className="font-display font-semibold mb-1">Stok Menipis</p>
+            <p className="text-xs text-muted">Lihat barang yang perlu dipesan ulang</p>
+          </div>
+          <ArrowRight size={18} className="text-muted" />
+        </Link>
+        <Link to="/dashboard/aktivitas" className="bg-surface border border-border rounded-2xl p-5 hover:border-accent/40 transition-colors flex items-center justify-between">
+          <div>
+            <p className="font-display font-semibold mb-1">Aktivitas Terbaru</p>
+            <p className="text-xs text-muted">Riwayat pergerakan stok terakhir</p>
+          </div>
+          <ArrowRight size={18} className="text-muted" />
+        </Link>
       </div>
     </Layout>
   )

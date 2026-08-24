@@ -75,6 +75,11 @@ func main() {
 	laporanRepo := repository.NewLaporanRepository(db)
 	laporanService := service.NewLaporanService(laporanRepo)
 	laporanHandler := handler.NewLaporanHandler(laporanService)
+
+	// ---------- BARU: Dashboard ----------
+	dashboardRepo := repository.NewDashboardRepository(db)
+	dashboardService := service.NewDashboardService(dashboardRepo)
+	dashboardHandler := handler.NewDashboardHandler(dashboardService)
 	// ---------- END BARU ----------
 
 	http.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
@@ -122,11 +127,12 @@ func main() {
 	http.HandleFunc("/api/laporan/barang-masuk", laporanHandler.HandleLaporanMasuk)
 	http.HandleFunc("/api/laporan/barang-keluar", laporanHandler.HandleLaporanKeluar)
 	http.HandleFunc("/api/laporan/pergerakan", laporanHandler.HandleLaporanPergerakan)
+
+	// Dashboard
+	http.HandleFunc("/api/dashboard/overview", dashboardHandler.HandleOverview)
+	http.HandleFunc("/api/dashboard/stok-menipis", dashboardHandler.HandleStokMenipis)
+	http.HandleFunc("/api/dashboard/aktivitas", dashboardHandler.HandleAktivitas)
 	// ---------- END BARU ----------
-
-
-	http.HandleFunc("/api/profile", userHandler.HandleProfile)
-	http.HandleFunc("/api/change-password", userHandler.HandleChangePassword)
 
 	port := os.Getenv("APP_PORT")
 	if port == "" {

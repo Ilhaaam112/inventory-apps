@@ -2,13 +2,17 @@ import { Link, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Package, Tags, Truck, BarChart3, User, LogOut, Boxes, X, Ruler, Warehouse,
   ArrowDownToLine, ArrowUpFromLine, SlidersHorizontal, ArrowLeftRight, History,
-  FileText, FileInput, FileOutput, Activity,
+  FileText, FileInput, FileOutput, Activity, Gauge, AlertTriangle,
 } from 'lucide-react'
 
 const menuSections = [
   {
-    label: 'Utama',
-    items: [{ name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' }],
+    label: 'Dashboard',
+    items: [
+      { name: 'Overview', icon: Gauge, path: '/dashboard' },
+      { name: 'Stok Menipis', icon: AlertTriangle, path: '/dashboard/stok-menipis' },
+      { name: 'Aktivitas Terbaru', icon: LayoutDashboard, path: '/dashboard/aktivitas' },
+    ],
   },
   {
     label: 'Master Data',

@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import PublicHome from './pages/PublicHome'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
+import StokMenipis from './pages/StokMenipis'
+import AktivitasTerbaru from './pages/AktivitasTerbaru'
 import Barang from './pages/Barang'
 import Kategori from './pages/Kategori'
 import Satuan from './pages/Satuan'
@@ -46,6 +48,8 @@ function App() {
         />
 
         <Route path="/dashboard" element={privateRoute(Dashboard)} />
+        <Route path="/dashboard/stok-menipis" element={privateRoute(StokMenipis)} />
+        <Route path="/dashboard/aktivitas" element={privateRoute(AktivitasTerbaru)} />
         <Route path="/barang" element={privateRoute(Barang)} />
         <Route path="/kategori" element={privateRoute(Kategori)} />
         <Route path="/satuan" element={privateRoute(Satuan)} />
@@ -64,7 +68,6 @@ function App() {
         <Route path="/laporan/barang-masuk" element={privateRoute(LaporanBarangMasuk)} />
         <Route path="/laporan/barang-keluar" element={privateRoute(LaporanBarangKeluar)} />
         <Route path="/laporan/pergerakan" element={privateRoute(LaporanPergerakan)} />
-
 
         <Route path="/profil" element={privateRoute(Profil)} />
         <Route path="*" element={<Navigate to="/" />} />
