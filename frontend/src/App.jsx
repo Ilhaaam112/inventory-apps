@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { refreshSession, logoutRequest, setAccessToken } from './api'
+
 import PublicHome from './pages/PublicHome'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -10,6 +12,7 @@ import Kategori from './pages/Kategori'
 import Satuan from './pages/Satuan'
 import Supplier from './pages/Supplier'
 import Lokasi from './pages/Lokasi'
+import Profil from './pages/Profil'
 import BarangMasuk from './pages/BarangMasuk'
 import BarangKeluar from './pages/BarangKeluar'
 import PenyesuaianStok from './pages/PenyesuaianStok'
@@ -19,24 +22,44 @@ import KartuStok from './pages/KartuStok'
 import LaporanBarangMasuk from './pages/LaporanBarangMasuk'
 import LaporanBarangKeluar from './pages/LaporanBarangKeluar'
 import LaporanPergerakan from './pages/LaporanPergerakan'
-import Profil from './pages/Profil'
 
 function App() {
   const [user, setUser] = useState(null)
+  const [memuat, setMemuat] = useState(true)
 
+  // Saat halaman dibuka atau di-refresh, access token di memori hilang.
+  // Cookie refresh token masih ada, jadi kita tukar diam-diam jadi
+  // access token baru. Kalau gagal, berarti memang belum login.
   useEffect(() => {
-    const savedUser = localStorage.getItem('user')
-    if (savedUser) setUser(JSON.parse(savedUser))
+    refreshSession()
+      .then((data) => setUser(data.user))
+      .catch(() => setUser(null))
+      .finally(() => setMemuat(false))
   }, [])
 
-  const handleLogout = () => {
-    localStorage.removeItem('user')
-    setUser(null)
-  }
+  // Interceptor di api.js melempar event ini kalau refresh gagal.
+  useEffect(() => {
+    const keluarPaksa = () => setUser(null)
+    window.addEventListener('auth:logout', keluarPaksa)
+    return () => window.removeEventListener('auth:logout', keluarPaksa)
+  }, [])
 
-  // semua halaman dalam dashboard butuh login
+  const handleLogout = useCallback(async () => {
+    await logoutRequest()
+    setAccessToken(null)
+    setUser(null)
+  }, [])
+
   const privateRoute = (Component) =>
     user ? <Component user={user} onLogout={handleLogout} /> : <Navigate to="/login" />
+
+  if (memuat) {
+    return (
+      <div className="min-h-screen bg-canvas text-muted flex items-center justify-center text-sm">
+        Memuat sesi…
+      </div>
+    )
+  }
 
   return (
     <BrowserRouter>
@@ -47,14 +70,18 @@ function App() {
           element={user ? <Navigate to="/dashboard" /> : <Login onLoginSuccess={setUser} />}
         />
 
+        {/* Dashboard */}
         <Route path="/dashboard" element={privateRoute(Dashboard)} />
         <Route path="/dashboard/stok-menipis" element={privateRoute(StokMenipis)} />
         <Route path="/dashboard/aktivitas" element={privateRoute(AktivitasTerbaru)} />
+
+        {/* Master data */}
         <Route path="/barang" element={privateRoute(Barang)} />
         <Route path="/kategori" element={privateRoute(Kategori)} />
         <Route path="/satuan" element={privateRoute(Satuan)} />
         <Route path="/supplier" element={privateRoute(Supplier)} />
         <Route path="/lokasi" element={privateRoute(Lokasi)} />
+        <Route path="/profil" element={privateRoute(Profil)} />
 
         {/* Transaksi */}
         <Route path="/barang-masuk" element={privateRoute(BarangMasuk)} />
@@ -68,8 +95,9 @@ function App() {
         <Route path="/laporan/barang-masuk" element={privateRoute(LaporanBarangMasuk)} />
         <Route path="/laporan/barang-keluar" element={privateRoute(LaporanBarangKeluar)} />
         <Route path="/laporan/pergerakan" element={privateRoute(LaporanPergerakan)} />
-
+        
         <Route path="/profil" element={privateRoute(Profil)} />
+
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>

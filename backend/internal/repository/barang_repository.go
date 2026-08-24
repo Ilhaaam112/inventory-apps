@@ -54,18 +54,18 @@ func (r *BarangRepository) GetByID(id int) (model.Barang, error) {
 // Create tidak lagi menerima stok awal: stok hanya boleh bertambah
 // lewat transaksi Barang Masuk, supaya warehouse_stocks dan
 // stock_movements tetap sinkron.
-func (r *BarangRepository) Create(b model.Barang) model.Barang {
+func (r *BarangRepository) Create(b model.Barang) (model.Barang, error) {
 	result, err := r.db.Exec(
 		"INSERT INTO barang (nama, harga, stok, stok_minimum, kategori_id, satuan_id) VALUES (?, ?, 0, ?, ?, ?)",
 		b.Nama, b.Harga, b.StokMinimum, b.KategoriID, b.SatuanID,
 	)
 	if err != nil {
-		return model.Barang{}
+		return model.Barang{}, bungkusError(err)
 	}
 	id, _ := result.LastInsertId()
 	b.ID = int(id)
 	b.Stok = 0
-	return b
+	return b, nil
 }
 
 // Update sengaja tidak menyentuh kolom stok.
@@ -75,7 +75,7 @@ func (r *BarangRepository) Update(id int, updated model.Barang) (model.Barang, e
 		updated.Nama, updated.Harga, updated.StokMinimum, updated.KategoriID, updated.SatuanID, id,
 	)
 	if err != nil {
-		return model.Barang{}, err
+		return model.Barang{}, bungkusError(err)
 	}
 	return r.GetByID(id)
 }
@@ -83,7 +83,7 @@ func (r *BarangRepository) Update(id int, updated model.Barang) (model.Barang, e
 func (r *BarangRepository) Delete(id int) error {
 	result, err := r.db.Exec("DELETE FROM barang WHERE id = ?", id)
 	if err != nil {
-		return err
+		return bungkusError(err)
 	}
 	affected, _ := result.RowsAffected()
 	if affected == 0 {

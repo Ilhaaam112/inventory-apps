@@ -53,8 +53,8 @@ function StokMenipis({ user, onLogout }) {
         {rows.length > 0 && ` Saat ini ${habis} habis dari ${rows.length} baris.`}
       </p>
 
-      <div className="bg-surface border border-border rounded-2xl overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-surface border border-border rounded-2xl overflow-x-auto">
+        <table className="w-full text-sm min-w-[700px]">
           <thead>
             <tr className="border-b border-border text-left text-xs font-mono text-muted">
               <th className="px-5 py-3">Barang</th>

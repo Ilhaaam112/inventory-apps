@@ -1,9 +1,9 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
 
+	"github.com/username/belajar_go/backend/internal/middleware"
 	"github.com/username/belajar_go/backend/internal/model"
 	"github.com/username/belajar_go/backend/internal/service"
 )
@@ -23,9 +23,12 @@ func (h *StockOutHandler) HandleStockOut(w http.ResponseWriter, r *http.Request)
 
 	case http.MethodPost:
 		var out model.StockOut
-		if err := json.NewDecoder(r.Body).Decode(&out); err != nil {
+		if err := decodeJSON(r, &out); err != nil {
 			writeError(w, http.StatusBadRequest, "data tidak valid")
 			return
+		}
+		if uid := middleware.UserID(r); uid > 0 {
+			out.UserID = &uid
 		}
 		created, err := h.service.Create(out)
 		if err != nil {

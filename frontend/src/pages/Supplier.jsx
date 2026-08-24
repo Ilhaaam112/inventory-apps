@@ -16,9 +16,7 @@ function Supplier({ user, onLogout }) {
     }
   }
 
-  useEffect(() => {
-    fetchSupplier()
-  }, [])
+  useEffect(() => { fetchSupplier() }, [])
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
@@ -58,37 +56,32 @@ function Supplier({ user, onLogout }) {
     setForm({ nama_supplier: '', kontak: '', alamat: '' })
   }
 
+  const input = 'w-full bg-surface-soft border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-accent transition-colors'
+  const label = 'block text-xs font-mono text-muted mb-1.5'
+  const btnEdit = 'flex-1 sm:flex-none text-xs border border-border rounded-lg px-3 py-2 text-muted hover:text-ink transition-colors'
+  const btnHapus = 'flex-1 sm:flex-none text-xs border border-accent/40 rounded-lg px-3 py-2 text-accent hover:bg-accent/10 transition-colors'
+
   return (
     <Layout title="Data Supplier" user={user} onLogout={onLogout}>
-      <form onSubmit={handleSubmit} className="bg-surface border border-border rounded-2xl p-6 mb-8">
+      <form onSubmit={handleSubmit} className="bg-surface border border-border rounded-2xl p-4 sm:p-6 mb-6">
         <h3 className="font-display font-semibold mb-4">
           {editId ? 'Edit Supplier' : 'Tambah Supplier Baru'}
         </h3>
-        <div className="grid sm:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
           <div>
-            <label className="block text-xs font-mono text-muted mb-1.5">NAMA SUPPLIER</label>
-            <input
-              type="text" name="nama_supplier" value={form.nama_supplier} onChange={handleChange} required
-              className="w-full bg-surface-soft border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-accent transition-colors"
-            />
+            <label className={label}>NAMA SUPPLIER</label>
+            <input type="text" name="nama_supplier" value={form.nama_supplier} onChange={handleChange} required className={input} />
           </div>
           <div>
-            <label className="block text-xs font-mono text-muted mb-1.5">KONTAK</label>
-            <input
-              type="text" name="kontak" value={form.kontak} onChange={handleChange}
-              placeholder="No. HP / Email"
-              className="w-full bg-surface-soft border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-accent transition-colors"
-            />
+            <label className={label}>KONTAK</label>
+            <input type="text" name="kontak" value={form.kontak} onChange={handleChange} placeholder="No. HP / Email" className={input} />
           </div>
-          <div>
-            <label className="block text-xs font-mono text-muted mb-1.5">ALAMAT</label>
-            <input
-              type="text" name="alamat" value={form.alamat} onChange={handleChange}
-              className="w-full bg-surface-soft border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-accent transition-colors"
-            />
+          <div className="sm:col-span-2 lg:col-span-1">
+            <label className={label}>ALAMAT</label>
+            <input type="text" name="alamat" value={form.alamat} onChange={handleChange} className={input} />
           </div>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <button type="submit" className="bg-accent hover:bg-accent-soft transition-colors rounded-lg px-5 py-2.5 font-medium text-sm">
             {editId ? 'Update Supplier' : 'Tambah Supplier'}
           </button>
@@ -100,15 +93,46 @@ function Supplier({ user, onLogout }) {
         </div>
       </form>
 
-      <div className="bg-surface border border-border rounded-2xl overflow-hidden">
-        <table className="w-full text-sm">
+      {/* Mobile: kartu */}
+      <div className="md:hidden space-y-3">
+        {supplierList.length === 0 ? (
+          <div className="bg-surface border border-border rounded-2xl p-8 text-center text-muted text-sm">Belum ada data</div>
+        ) : (
+          supplierList.map((s) => (
+            <div key={s.id} className="bg-surface border border-border rounded-2xl p-4">
+              <div className="flex items-start justify-between gap-3">
+                <p className="font-medium break-words min-w-0">{s.nama_supplier}</p>
+                <span className="text-[11px] font-mono text-muted shrink-0">#{s.id}</span>
+              </div>
+              <dl className="mt-2 space-y-1 text-xs">
+                <div className="flex gap-2">
+                  <dt className="text-muted w-16 shrink-0">Kontak</dt>
+                  <dd className="break-words min-w-0">{s.kontak || '—'}</dd>
+                </div>
+                <div className="flex gap-2">
+                  <dt className="text-muted w-16 shrink-0">Alamat</dt>
+                  <dd className="break-words min-w-0">{s.alamat || '—'}</dd>
+                </div>
+              </dl>
+              <div className="flex gap-2 mt-3">
+                <button onClick={() => handleEdit(s)} className={btnEdit}>Edit</button>
+                <button onClick={() => handleDelete(s.id)} className={btnHapus}>Hapus</button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Tablet & desktop */}
+      <div className="hidden md:block bg-surface border border-border rounded-2xl overflow-x-auto">
+        <table className="w-full text-sm min-w-[720px]">
           <thead>
             <tr className="border-b border-border text-left text-xs font-mono text-muted">
               <th className="px-5 py-3">ID</th>
               <th className="px-5 py-3">Nama Supplier</th>
               <th className="px-5 py-3">Kontak</th>
               <th className="px-5 py-3">Alamat</th>
-              <th className="px-5 py-3">Aksi</th>
+              <th className="px-5 py-3 text-right">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -121,7 +145,7 @@ function Supplier({ user, onLogout }) {
                   <td className="px-5 py-3 font-medium">{s.nama_supplier}</td>
                   <td className="px-5 py-3 text-muted">{s.kontak || '-'}</td>
                   <td className="px-5 py-3 text-muted">{s.alamat || '-'}</td>
-                  <td className="px-5 py-3">
+                  <td className="px-5 py-3 text-right whitespace-nowrap">
                     <button onClick={() => handleEdit(s)} className="text-xs text-muted hover:text-ink mr-3">Edit</button>
                     <button onClick={() => handleDelete(s.id)} className="text-xs text-accent hover:text-accent-soft">Hapus</button>
                   </td>

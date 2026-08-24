@@ -22,11 +22,12 @@ func (r *SatuanRepository) GetAll() []model.Satuan {
 	}
 	defer rows.Close()
 
-	var list []model.Satuan
+	list := []model.Satuan{}
 	for rows.Next() {
 		var s model.Satuan
-		rows.Scan(&s.ID, &s.NamaSatuan, &s.Keterangan)
-		list = append(list, s)
+		if err := rows.Scan(&s.ID, &s.NamaSatuan, &s.Keterangan); err == nil {
+			list = append(list, s)
+		}
 	}
 	return list
 }
@@ -40,20 +41,23 @@ func (r *SatuanRepository) GetByID(id int) (model.Satuan, error) {
 	return s, nil
 }
 
-func (r *SatuanRepository) Create(s model.Satuan) model.Satuan {
-	result, err := r.db.Exec("INSERT INTO satuan (nama_satuan, keterangan) VALUES (?, ?)", s.NamaSatuan, s.Keterangan)
+func (r *SatuanRepository) Create(s model.Satuan) (model.Satuan, error) {
+	result, err := r.db.Exec(
+		"INSERT INTO satuan (nama_satuan, keterangan) VALUES (?, ?)", s.NamaSatuan, s.Keterangan)
 	if err != nil {
-		return model.Satuan{}
+		return model.Satuan{}, bungkusError(err)
 	}
 	id, _ := result.LastInsertId()
 	s.ID = int(id)
-	return s
+	return s, nil
 }
 
 func (r *SatuanRepository) Update(id int, updated model.Satuan) (model.Satuan, error) {
-	_, err := r.db.Exec("UPDATE satuan SET nama_satuan = ?, keterangan = ? WHERE id = ?", updated.NamaSatuan, updated.Keterangan, id)
+	_, err := r.db.Exec(
+		"UPDATE satuan SET nama_satuan = ?, keterangan = ? WHERE id = ?",
+		updated.NamaSatuan, updated.Keterangan, id)
 	if err != nil {
-		return model.Satuan{}, err
+		return model.Satuan{}, bungkusError(err)
 	}
 	updated.ID = id
 	return updated, nil
@@ -62,7 +66,7 @@ func (r *SatuanRepository) Update(id int, updated model.Satuan) (model.Satuan, e
 func (r *SatuanRepository) Delete(id int) error {
 	result, err := r.db.Exec("DELETE FROM satuan WHERE id = ?", id)
 	if err != nil {
-		return err
+		return bungkusError(err)
 	}
 	affected, _ := result.RowsAffected()
 	if affected == 0 {

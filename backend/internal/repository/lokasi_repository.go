@@ -22,11 +22,12 @@ func (r *LokasiRepository) GetAll() []model.Lokasi {
 	}
 	defer rows.Close()
 
-	var list []model.Lokasi
+	list := []model.Lokasi{}
 	for rows.Next() {
 		var l model.Lokasi
-		rows.Scan(&l.ID, &l.NamaLokasi, &l.Keterangan)
-		list = append(list, l)
+		if err := rows.Scan(&l.ID, &l.NamaLokasi, &l.Keterangan); err == nil {
+			list = append(list, l)
+		}
 	}
 	return list
 }
@@ -40,20 +41,23 @@ func (r *LokasiRepository) GetByID(id int) (model.Lokasi, error) {
 	return l, nil
 }
 
-func (r *LokasiRepository) Create(l model.Lokasi) model.Lokasi {
-	result, err := r.db.Exec("INSERT INTO lokasi (nama_lokasi, keterangan) VALUES (?, ?)", l.NamaLokasi, l.Keterangan)
+func (r *LokasiRepository) Create(l model.Lokasi) (model.Lokasi, error) {
+	result, err := r.db.Exec(
+		"INSERT INTO lokasi (nama_lokasi, keterangan) VALUES (?, ?)", l.NamaLokasi, l.Keterangan)
 	if err != nil {
-		return model.Lokasi{}
+		return model.Lokasi{}, bungkusError(err)
 	}
 	id, _ := result.LastInsertId()
 	l.ID = int(id)
-	return l
+	return l, nil
 }
 
 func (r *LokasiRepository) Update(id int, updated model.Lokasi) (model.Lokasi, error) {
-	_, err := r.db.Exec("UPDATE lokasi SET nama_lokasi = ?, keterangan = ? WHERE id = ?", updated.NamaLokasi, updated.Keterangan, id)
+	_, err := r.db.Exec(
+		"UPDATE lokasi SET nama_lokasi = ?, keterangan = ? WHERE id = ?",
+		updated.NamaLokasi, updated.Keterangan, id)
 	if err != nil {
-		return model.Lokasi{}, err
+		return model.Lokasi{}, bungkusError(err)
 	}
 	updated.ID = id
 	return updated, nil
@@ -62,7 +66,7 @@ func (r *LokasiRepository) Update(id int, updated model.Lokasi) (model.Lokasi, e
 func (r *LokasiRepository) Delete(id int) error {
 	result, err := r.db.Exec("DELETE FROM lokasi WHERE id = ?", id)
 	if err != nil {
-		return err
+		return bungkusError(err)
 	}
 	affected, _ := result.RowsAffected()
 	if affected == 0 {

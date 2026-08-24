@@ -51,16 +51,16 @@ function AktivitasTerbaru({ user, onLogout }) {
               const g = gaya[r.type] || { label: r.type, icon: SlidersHorizontal, warna: 'text-muted' }
               const Icon = g.icon
               return (
-                <div key={i} className="flex items-start gap-4 px-5 py-4 hover:bg-surface-soft transition-colors">
+                <div key={i} className="flex items-start gap-3 sm:gap-4 px-4 sm:px-5 py-4 hover:bg-surface-soft transition-colors">
                   <div className={`mt-0.5 ${g.warna}`}>
                     <Icon size={17} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm">
+                    <p className="text-sm break-words">
                       <span className="font-medium">{r.nama_barang}</span>
                       <span className="text-muted"> · {g.label} di {r.nama_lokasi}</span>
                     </p>
-                    <p className="text-xs text-muted mt-0.5 font-mono">
+                    <p className="text-[11px] sm:text-xs text-muted mt-0.5 font-mono break-words">
                       {r.waktu} · {r.referensi}
                       {r.nama_user ? ` · ${r.nama_user}` : ''}
                     </p>

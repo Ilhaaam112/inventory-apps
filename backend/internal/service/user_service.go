@@ -2,10 +2,11 @@ package service
 
 import (
 	"errors"
+	"strings"
 
+	"github.com/username/belajar_go/backend/internal/auth"
 	"github.com/username/belajar_go/backend/internal/model"
 	"github.com/username/belajar_go/backend/internal/repository"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type UserService struct {
@@ -16,52 +17,50 @@ func NewUserService(repo *repository.UserRepository) *UserService {
 	return &UserService{repo: repo}
 }
 
-func (s *UserService) Login(username, password string) (model.User, error) {
-	user, err := s.repo.GetByUsername(username)
-	if err != nil {
-		return model.User{}, errors.New("username atau password salah")
-	}
-
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-	if err != nil {
-		return model.User{}, errors.New("username atau password salah")
-	}
-
-	return user, nil
-}
-
-
-
-// ---------- BARU: untuk halaman Profil ----------
-
 func (s *UserService) GetProfile(id int) (model.User, error) {
-	return s.repo.GetByID(id)
+	u, err := s.repo.GetByID(id)
+	if err != nil {
+		return model.User{}, err
+	}
+	u.Password = ""
+	return u, nil
 }
 
 func (s *UserService) UpdateProfile(id int, namaLengkap string) (model.User, error) {
+	namaLengkap = strings.TrimSpace(namaLengkap)
 	if namaLengkap == "" {
 		return model.User{}, errors.New("nama lengkap tidak boleh kosong")
 	}
-	if err := s.repo.UpdateProfile(id, namaLengkap); err != nil {
-		return model.User{}, err
+	if len(namaLengkap) > 100 {
+		return model.User{}, errors.New("nama lengkap maksimal 100 karakter")
 	}
-	return s.repo.GetByID(id)
+	if err := s.repo.UpdateProfile(id, namaLengkap); err != nil {
+		return model.User{}, errors.New("gagal menyimpan profil")
+	}
+	return s.GetProfile(id)
 }
 
 func (s *UserService) ChangePassword(id int, oldPassword, newPassword string) error {
 	user, err := s.repo.GetByID(id)
 	if err != nil {
-		return err
+		return errors.New("user tidak ditemukan")
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(oldPassword)); err != nil {
+	if !auth.CheckPassword(user.Password, oldPassword) {
 		return errors.New("password lama salah")
 	}
-	if len(newPassword) < 6 {
-		return errors.New("password baru minimal 6 karakter")
+	if len(newPassword) < 8 {
+		return errors.New("password baru minimal 8 karakter")
 	}
-	hashed, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if len(newPassword) > 200 {
+		return errors.New("password baru terlalu panjang")
+	}
+	if newPassword == oldPassword {
+		return errors.New("password baru harus berbeda dari password lama")
+	}
+
+	hashed, err := auth.HashPassword(newPassword)
 	if err != nil {
-		return err
+		return errors.New("gagal mengubah password")
 	}
-	return s.repo.UpdatePassword(id, string(hashed))
+	return s.repo.UpdatePassword(id, hashed)
 }

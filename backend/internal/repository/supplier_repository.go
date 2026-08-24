@@ -22,11 +22,12 @@ func (r *SupplierRepository) GetAll() []model.Supplier {
 	}
 	defer rows.Close()
 
-	var list []model.Supplier
+	list := []model.Supplier{}
 	for rows.Next() {
 		var s model.Supplier
-		rows.Scan(&s.ID, &s.NamaSupplier, &s.Kontak, &s.Alamat)
-		list = append(list, s)
+		if err := rows.Scan(&s.ID, &s.NamaSupplier, &s.Kontak, &s.Alamat); err == nil {
+			list = append(list, s)
+		}
 	}
 	return list
 }
@@ -40,26 +41,24 @@ func (r *SupplierRepository) GetByID(id int) (model.Supplier, error) {
 	return s, nil
 }
 
-func (r *SupplierRepository) Create(s model.Supplier) model.Supplier {
+func (r *SupplierRepository) Create(s model.Supplier) (model.Supplier, error) {
 	result, err := r.db.Exec(
 		"INSERT INTO supplier (nama_supplier, kontak, alamat) VALUES (?, ?, ?)",
-		s.NamaSupplier, s.Kontak, s.Alamat,
-	)
+		s.NamaSupplier, s.Kontak, s.Alamat)
 	if err != nil {
-		return model.Supplier{}
+		return model.Supplier{}, bungkusError(err)
 	}
 	id, _ := result.LastInsertId()
 	s.ID = int(id)
-	return s
+	return s, nil
 }
 
 func (r *SupplierRepository) Update(id int, updated model.Supplier) (model.Supplier, error) {
 	_, err := r.db.Exec(
 		"UPDATE supplier SET nama_supplier = ?, kontak = ?, alamat = ? WHERE id = ?",
-		updated.NamaSupplier, updated.Kontak, updated.Alamat, id,
-	)
+		updated.NamaSupplier, updated.Kontak, updated.Alamat, id)
 	if err != nil {
-		return model.Supplier{}, err
+		return model.Supplier{}, bungkusError(err)
 	}
 	updated.ID = id
 	return updated, nil
@@ -68,7 +67,7 @@ func (r *SupplierRepository) Update(id int, updated model.Supplier) (model.Suppl
 func (r *SupplierRepository) Delete(id int) error {
 	result, err := r.db.Exec("DELETE FROM supplier WHERE id = ?", id)
 	if err != nil {
-		return err
+		return bungkusError(err)
 	}
 	affected, _ := result.RowsAffected()
 	if affected == 0 {

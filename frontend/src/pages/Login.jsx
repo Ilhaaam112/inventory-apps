@@ -1,23 +1,28 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import axios from 'axios'
+import { loginRequest } from '../api'
 
 function Login({ onLoginSuccess }) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setLoading(true)
     try {
-      const res = await axios.post('/api/login', { username, password })
-      localStorage.setItem('user', JSON.stringify(res.data.user))
-      onLoginSuccess(res.data.user)
+      // Access token disimpan di memori oleh api.js.
+      // Refresh token dipasang server sebagai HttpOnly cookie.
+      const user = await loginRequest(username, password)
+      onLoginSuccess(user)
       navigate('/dashboard')
     } catch (err) {
       setError(err.response?.data?.error || 'Login gagal')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -46,6 +51,7 @@ function Login({ onLoginSuccess }) {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
+                autoComplete="username"
                 className="w-full bg-surface-soft border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-accent transition-colors"
               />
             </div>
@@ -56,14 +62,16 @@ function Login({ onLoginSuccess }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                autoComplete="current-password"
                 className="w-full bg-surface-soft border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-accent transition-colors"
               />
             </div>
             <button
               type="submit"
-              className="w-full bg-accent hover:bg-accent-soft transition-colors rounded-lg py-2.5 font-medium mt-2"
+              disabled={loading}
+              className="w-full bg-accent hover:bg-accent-soft transition-colors rounded-lg py-2.5 font-medium mt-2 disabled:opacity-50"
             >
-              Masuk
+              {loading ? 'Memproses…' : 'Masuk'}
             </button>
           </form>
         </div>

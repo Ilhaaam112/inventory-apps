@@ -1,10 +1,9 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
-	"strconv"
 
+	"github.com/username/belajar_go/backend/internal/middleware"
 	"github.com/username/belajar_go/backend/internal/model"
 	"github.com/username/belajar_go/backend/internal/service"
 )
@@ -17,87 +16,62 @@ func NewUserHandler(s *service.UserService) *UserHandler {
 	return &UserHandler{service: s}
 }
 
-func (h *UserHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	if r.Method != http.MethodPost {
-		http.Error(w, `{"error":"method tidak diizinkan"}`, http.StatusMethodNotAllowed)
-		return
-	}
-
-	var req model.LoginRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error":"data tidak valid"}`, http.StatusBadRequest)
-		return
-	}
-
-	user, err := h.service.Login(req.Username, req.Password)
-	if err != nil {
-		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusUnauthorized)
-		return
-	}
-
-	response := model.LoginResponse{
-		Message: "Login berhasil",
-		User:    user,
-	}
-	json.NewEncoder(w).Encode(response)
-}
-
-
-
-
-
-
+// HandleProfile sekarang selalu memakai id dari access token.
+// Parameter ?id= diabaikan, supaya user tidak bisa membuka atau
+// mengubah profil orang lain hanya dengan mengganti angka di URL.
 func (h *UserHandler) HandleProfile(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	id := middleware.UserID(r)
+	if id == 0 {
+		writeError(w, http.StatusUnauthorized, "tidak terautentikasi")
+		return
+	}
 
 	switch r.Method {
 	case http.MethodGet:
-		id, err := strconv.Atoi(r.URL.Query().Get("id"))
-		if err != nil {
-			http.Error(w, `{"error":"id tidak valid"}`, http.StatusBadRequest)
-			return
-		}
 		user, err := h.service.GetProfile(id)
 		if err != nil {
-			http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusNotFound)
+			writeError(w, http.StatusNotFound, err.Error())
 			return
 		}
-		json.NewEncoder(w).Encode(user)
+		writeJSON(w, user)
 
 	case http.MethodPut:
 		var req model.UpdateProfileRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, `{"error":"body tidak valid"}`, http.StatusBadRequest)
+		if err := decodeJSON(r, &req); err != nil {
+			writeError(w, http.StatusBadRequest, "data tidak valid")
 			return
 		}
-		user, err := h.service.UpdateProfile(req.ID, req.NamaLengkap)
+		user, err := h.service.UpdateProfile(id, req.NamaLengkap)
 		if err != nil {
-			http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		json.NewEncoder(w).Encode(user)
+		writeJSON(w, user)
 
 	default:
-		http.Error(w, `{"error":"method tidak diizinkan"}`, http.StatusMethodNotAllowed)
+		writeError(w, http.StatusMethodNotAllowed, "method tidak diizinkan")
 	}
 }
 
 func (h *UserHandler) HandleChangePassword(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPut {
-		http.Error(w, `{"error":"method tidak diizinkan"}`, http.StatusMethodNotAllowed)
+		writeError(w, http.StatusMethodNotAllowed, "method tidak diizinkan")
 		return
 	}
+	id := middleware.UserID(r)
+	if id == 0 {
+		writeError(w, http.StatusUnauthorized, "tidak terautentikasi")
+		return
+	}
+
 	var req model.ChangePasswordRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error":"body tidak valid"}`, http.StatusBadRequest)
+	if err := decodeJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "data tidak valid")
 		return
 	}
-	if err := h.service.ChangePassword(req.ID, req.OldPassword, req.NewPassword); err != nil {
-		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+	if err := h.service.ChangePassword(id, req.OldPassword, req.NewPassword); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	w.Write([]byte(`{"message":"password berhasil diubah"}`))
+	writeJSON(w, map[string]string{"message": "password berhasil diubah"})
 }

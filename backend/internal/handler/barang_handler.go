@@ -1,10 +1,7 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
-	"strconv"
-	"strings"
 
 	"github.com/username/belajar_go/backend/internal/model"
 	"github.com/username/belajar_go/backend/internal/service"
@@ -19,71 +16,65 @@ func NewBarangHandler(s *service.BarangService) *BarangHandler {
 }
 
 func (h *BarangHandler) HandleBarang(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	switch r.Method {
 	case http.MethodGet:
-		data := h.service.GetAll()
-		json.NewEncoder(w).Encode(data)
+		writeJSON(w, h.service.GetAll())
 
 	case http.MethodPost:
-		var b model.Barang
-		if err := json.NewDecoder(r.Body).Decode(&b); err != nil {
-			http.Error(w, `{"error":"data tidak valid"}`, http.StatusBadRequest)
+		var m model.Barang
+		if err := decodeJSON(r, &m); err != nil {
+			writeError(w, http.StatusBadRequest, "data tidak valid")
 			return
 		}
-		created, err := h.service.Create(b)
+		created, err := h.service.Create(m)
 		if err != nil {
-			http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
+			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		json.NewEncoder(w).Encode(created)
+		writeJSON(w, created)
 
 	default:
-		http.Error(w, `{"error":"method tidak diizinkan"}`, http.StatusMethodNotAllowed)
+		writeError(w, http.StatusMethodNotAllowed, "method tidak diizinkan")
 	}
 }
 
 func (h *BarangHandler) HandleBarangByID(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	idStr := strings.TrimPrefix(r.URL.Path, "/api/barang/")
-	id, err := strconv.Atoi(idStr)
+	id, err := idFromPath(r, "/api/barang/")
 	if err != nil {
-		http.Error(w, `{"error":"id tidak valid"}`, http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "id tidak valid")
 		return
 	}
 
 	switch r.Method {
 	case http.MethodGet:
-		b, err := h.service.GetByID(id)
+		m, err := h.service.GetByID(id)
 		if err != nil {
-			http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusNotFound)
+			writeError(w, http.StatusNotFound, err.Error())
 			return
 		}
-		json.NewEncoder(w).Encode(b)
+		writeJSON(w, m)
 
 	case http.MethodPut:
-		var b model.Barang
-		if err := json.NewDecoder(r.Body).Decode(&b); err != nil {
-			http.Error(w, `{"error":"data tidak valid"}`, http.StatusBadRequest)
+		var m model.Barang
+		if err := decodeJSON(r, &m); err != nil {
+			writeError(w, http.StatusBadRequest, "data tidak valid")
 			return
 		}
-		updated, err := h.service.Update(id, b)
+		updated, err := h.service.Update(id, m)
 		if err != nil {
-			http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusNotFound)
+			writeError(w, http.StatusNotFound, err.Error())
 			return
 		}
-		json.NewEncoder(w).Encode(updated)
+		writeJSON(w, updated)
 
 	case http.MethodDelete:
 		if err := h.service.Delete(id); err != nil {
-			http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusNotFound)
+			writeError(w, http.StatusNotFound, err.Error())
 			return
 		}
-		json.NewEncoder(w).Encode(map[string]string{"message": "barang berhasil dihapus"})
+		writeJSON(w, map[string]string{"message": "barang berhasil dihapus"})
 
 	default:
-		http.Error(w, `{"error":"method tidak diizinkan"}`, http.StatusMethodNotAllowed)
+		writeError(w, http.StatusMethodNotAllowed, "method tidak diizinkan")
 	}
 }

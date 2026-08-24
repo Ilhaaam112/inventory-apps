@@ -43,10 +43,10 @@ const menuSections = [
       { name: 'Pergerakan Stok', icon: Activity, path: '/laporan/pergerakan' },
     ],
   },
-{
-  label: 'Akun',
-  items: [{ name: 'Profil', icon: User, path: '/profil' }], // hapus soon: true
-},
+  {
+    label: 'Akun',
+    items: [{ name: 'Profil', icon: User, path: '/profil' }],
+  },
 ]
 
 function Sidebar({ mobileOpen, setMobileOpen, onLogout }) {
@@ -66,7 +66,7 @@ function Sidebar({ mobileOpen, setMobileOpen, onLogout }) {
         <div className="flex items-center justify-between px-6 py-6 border-b border-border">
           <span className="font-display text-lg font-semibold flex items-center gap-2">
             <Boxes size={20} className="text-accent" />
-            belajar<span className="text-accent">Go</span>.
+            Inventory<span className="text-accent">Apps</span>.
           </span>
           <button className="md:hidden text-muted" onClick={() => setMobileOpen(false)}>
             <X size={20} />

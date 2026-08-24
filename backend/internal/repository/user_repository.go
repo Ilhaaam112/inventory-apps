@@ -15,25 +15,26 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
+const userBaseQuery = `
+	SELECT u.id, u.username, u.password, u.nama_lengkap, u.role_id, COALESCE(r.name, '')
+	FROM users u
+	LEFT JOIN roles r ON u.role_id = r.id
+`
+
 func (r *UserRepository) GetByUsername(username string) (model.User, error) {
 	var u model.User
-	row := r.db.QueryRow("SELECT id, username, password, nama_lengkap FROM users WHERE username = ?", username)
-	err := row.Scan(&u.ID, &u.Username, &u.Password, &u.NamaLengkap)
+	err := r.db.QueryRow(userBaseQuery+" WHERE u.username = ?", username).
+		Scan(&u.ID, &u.Username, &u.Password, &u.NamaLengkap, &u.RoleID, &u.RoleName)
 	if err != nil {
 		return model.User{}, errors.New("username tidak ditemukan")
 	}
 	return u, nil
 }
 
-
-
-
-// ---------- BARU: untuk halaman Profil ----------
-
 func (r *UserRepository) GetByID(id int) (model.User, error) {
 	var u model.User
-	row := r.db.QueryRow("SELECT id, username, password, nama_lengkap FROM users WHERE id = ?", id)
-	err := row.Scan(&u.ID, &u.Username, &u.Password, &u.NamaLengkap)
+	err := r.db.QueryRow(userBaseQuery+" WHERE u.id = ?", id).
+		Scan(&u.ID, &u.Username, &u.Password, &u.NamaLengkap, &u.RoleID, &u.RoleName)
 	if err != nil {
 		return model.User{}, errors.New("user tidak ditemukan")
 	}

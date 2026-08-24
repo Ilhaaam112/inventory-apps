@@ -60,18 +60,18 @@ function LaporanBarangMasuk({ user, onLogout }) {
       </FilterBar>
 
       <div className="grid sm:grid-cols-2 gap-4 mb-6">
-        <div className="bg-surface border border-border rounded-2xl p-5">
+        <div className="bg-surface border border-border rounded-2xl p-4 sm:p-5">
           <p className="text-xs font-mono text-muted mb-1">TOTAL UNIT MASUK</p>
           <p className="font-display text-2xl text-success">{totalQty.toLocaleString('id-ID')}</p>
         </div>
-        <div className="bg-surface border border-border rounded-2xl p-5">
+        <div className="bg-surface border border-border rounded-2xl p-4 sm:p-5">
           <p className="text-xs font-mono text-muted mb-1">NILAI PEMBELIAN</p>
           <p className="font-display text-2xl text-accent">{rupiah(totalNilai)}</p>
         </div>
       </div>
 
-      <div className="bg-surface border border-border rounded-2xl overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-surface border border-border rounded-2xl overflow-x-auto">
+        <table className="w-full text-sm min-w-[900px]">
           <thead>
             <tr className="border-b border-border text-left text-xs font-mono text-muted">
               <th className="px-5 py-3">Tanggal</th>

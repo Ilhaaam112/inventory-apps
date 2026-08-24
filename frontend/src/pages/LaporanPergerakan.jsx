@@ -53,8 +53,8 @@ function LaporanPergerakan({ user, onLogout }) {
         ditampilkan supaya posisi stok terbaca utuh ({bergerak.length} dari {rows.length} baris bergerak).
       </p>
 
-      <div className="bg-surface border border-border rounded-2xl overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-surface border border-border rounded-2xl overflow-x-auto">
+        <table className="w-full text-sm min-w-[820px]">
           <thead>
             <tr className="border-b border-border text-left text-xs font-mono text-muted">
               <th className="px-5 py-3">Barang</th>

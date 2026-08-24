@@ -48,13 +48,13 @@ function LaporanBarangKeluar({ user, onLogout }) {
         </Field>
       </FilterBar>
 
-      <div className="bg-surface border border-border rounded-2xl p-5 mb-6">
+      <div className="bg-surface border border-border rounded-2xl p-4 sm:p-5 mb-6">
         <p className="text-xs font-mono text-muted mb-1">TOTAL UNIT KELUAR</p>
         <p className="font-display text-2xl text-accent">{totalQty.toLocaleString('id-ID')}</p>
       </div>
 
-      <div className="bg-surface border border-border rounded-2xl overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-surface border border-border rounded-2xl overflow-x-auto">
+        <table className="w-full text-sm min-w-[760px]">
           <thead>
             <tr className="border-b border-border text-left text-xs font-mono text-muted">
               <th className="px-5 py-3">Tanggal</th>

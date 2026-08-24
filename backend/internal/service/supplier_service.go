@@ -20,23 +20,55 @@ func (s *SupplierService) GetAll() []model.Supplier {
 }
 
 func (s *SupplierService) GetByID(id int) (model.Supplier, error) {
+	if err := idValid(id); err != nil {
+		return model.Supplier{}, err
+	}
 	return s.repo.GetByID(id)
 }
 
-func (s *SupplierService) Create(m model.Supplier) (model.Supplier, error) {
-	if m.NamaSupplier == "" {
-		return model.Supplier{}, errors.New("nama supplier wajib diisi")
+func (s *SupplierService) bersihkan(m model.Supplier) (model.Supplier, error) {
+	nama, err := teksWajib(m.NamaSupplier, "nama supplier", 150)
+	if err != nil {
+		return model.Supplier{}, err
 	}
-	return s.repo.Create(m), nil
+	kontak, err := teksOpsional(m.Kontak, "kontak", 100)
+	if err != nil {
+		return model.Supplier{}, err
+	}
+	alamat, err := teksOpsional(m.Alamat, "alamat", 255)
+	if err != nil {
+		return model.Supplier{}, err
+	}
+	m.NamaSupplier, m.Kontak, m.Alamat = nama, kontak, alamat
+	return m, nil
+}
+
+func (s *SupplierService) Create(m model.Supplier) (model.Supplier, error) {
+	m, err := s.bersihkan(m)
+	if err != nil {
+		return model.Supplier{}, err
+	}
+	created, err := s.repo.Create(m)
+	if err != nil {
+		return model.Supplier{}, errors.New("gagal menyimpan supplier")
+	}
+	return created, nil
 }
 
 func (s *SupplierService) Update(id int, m model.Supplier) (model.Supplier, error) {
-	if m.NamaSupplier == "" {
-		return model.Supplier{}, errors.New("nama supplier wajib diisi")
+	if err := idValid(id); err != nil {
+		return model.Supplier{}, err
+	}
+	m, err := s.bersihkan(m)
+	if err != nil {
+		return model.Supplier{}, err
 	}
 	return s.repo.Update(id, m)
 }
 
 func (s *SupplierService) Delete(id int) error {
+	if err := idValid(id); err != nil {
+		return err
+	}
 	return s.repo.Delete(id)
 }

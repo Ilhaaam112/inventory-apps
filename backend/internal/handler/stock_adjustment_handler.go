@@ -1,9 +1,9 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
 
+	"github.com/username/belajar_go/backend/internal/middleware"
 	"github.com/username/belajar_go/backend/internal/model"
 	"github.com/username/belajar_go/backend/internal/service"
 )
@@ -23,9 +23,12 @@ func (h *StockAdjustmentHandler) HandleAdjustment(w http.ResponseWriter, r *http
 
 	case http.MethodPost:
 		var a model.StockAdjustment
-		if err := json.NewDecoder(r.Body).Decode(&a); err != nil {
+		if err := decodeJSON(r, &a); err != nil {
 			writeError(w, http.StatusBadRequest, "data tidak valid")
 			return
+		}
+		if uid := middleware.UserID(r); uid > 0 {
+			a.UserID = &uid
 		}
 		created, err := h.service.Create(a)
 		if err != nil {

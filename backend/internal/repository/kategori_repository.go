@@ -22,11 +22,12 @@ func (r *KategoriRepository) GetAll() []model.Kategori {
 	}
 	defer rows.Close()
 
-	var list []model.Kategori
+	list := []model.Kategori{}
 	for rows.Next() {
 		var k model.Kategori
-		rows.Scan(&k.ID, &k.NamaKategori)
-		list = append(list, k)
+		if err := rows.Scan(&k.ID, &k.NamaKategori); err == nil {
+			list = append(list, k)
+		}
 	}
 	return list
 }
@@ -40,20 +41,23 @@ func (r *KategoriRepository) GetByID(id int) (model.Kategori, error) {
 	return k, nil
 }
 
-func (r *KategoriRepository) Create(k model.Kategori) model.Kategori {
+// Create sekarang mengembalikan error. Versi lama diam-diam
+// mengembalikan struct kosong saat INSERT gagal, sehingga client
+// menerima 200 padahal datanya tidak tersimpan.
+func (r *KategoriRepository) Create(k model.Kategori) (model.Kategori, error) {
 	result, err := r.db.Exec("INSERT INTO kategori (nama_kategori) VALUES (?)", k.NamaKategori)
 	if err != nil {
-		return model.Kategori{}
+		return model.Kategori{}, bungkusError(err)
 	}
 	id, _ := result.LastInsertId()
 	k.ID = int(id)
-	return k
+	return k, nil
 }
 
 func (r *KategoriRepository) Update(id int, updated model.Kategori) (model.Kategori, error) {
 	_, err := r.db.Exec("UPDATE kategori SET nama_kategori = ? WHERE id = ?", updated.NamaKategori, id)
 	if err != nil {
-		return model.Kategori{}, err
+		return model.Kategori{}, bungkusError(err)
 	}
 	updated.ID = id
 	return updated, nil
@@ -62,7 +66,7 @@ func (r *KategoriRepository) Update(id int, updated model.Kategori) (model.Kateg
 func (r *KategoriRepository) Delete(id int) error {
 	result, err := r.db.Exec("DELETE FROM kategori WHERE id = ?", id)
 	if err != nil {
-		return err
+		return bungkusError(err)
 	}
 	affected, _ := result.RowsAffected()
 	if affected == 0 {

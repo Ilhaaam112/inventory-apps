@@ -1,9 +1,9 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
 
+	"github.com/username/belajar_go/backend/internal/middleware"
 	"github.com/username/belajar_go/backend/internal/model"
 	"github.com/username/belajar_go/backend/internal/service"
 )
@@ -23,9 +23,13 @@ func (h *StockInHandler) HandleStockIn(w http.ResponseWriter, r *http.Request) {
 
 	case http.MethodPost:
 		var in model.StockIn
-		if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		if err := decodeJSON(r, &in); err != nil {
 			writeError(w, http.StatusBadRequest, "data tidak valid")
 			return
+		}
+		// user_id diambil dari access token, bukan dari body request.
+		if uid := middleware.UserID(r); uid > 0 {
+			in.UserID = &uid
 		}
 		created, err := h.service.Create(in)
 		if err != nil {

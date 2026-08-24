@@ -86,7 +86,7 @@ function KartuStok({ user, onLogout }) {
         </div>
       ) : (
         <>
-          <div className="bg-surface border border-border rounded-2xl p-5 mb-6 flex flex-wrap gap-8">
+          <div className="bg-surface border border-border rounded-2xl p-4 sm:p-5 mb-6 grid grid-cols-2 sm:flex sm:flex-wrap gap-4 sm:gap-8">
             <div>
               <p className="text-xs font-mono text-muted mb-1">BARANG</p>
               <p className="font-display">{kartu.nama_barang} {kartu.nama_satuan ? `(${kartu.nama_satuan})` : ''}</p>
@@ -105,8 +105,8 @@ function KartuStok({ user, onLogout }) {
             </div>
           </div>
 
-          <div className="bg-surface border border-border rounded-2xl overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="bg-surface border border-border rounded-2xl overflow-x-auto">
+            <table className="w-full text-sm min-w-[720px]">
               <thead>
                 <tr className="border-b border-border text-left text-xs font-mono text-muted">
                   <th className="px-5 py-3">Waktu</th>
